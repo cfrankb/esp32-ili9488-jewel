@@ -30,3 +30,9 @@
 *.exe
 *.out
 *.app
+
+.vscode
+sdkconfig
+sdkconfig.old
+build/
+README-old.md
