@@ -24,8 +24,8 @@ esp-idf v4.4 or later.
 This project is based in part on: https://github.com/anuprao/esp32_ili9488/
 
 ```Shell
-git clone https://github.com/cfrankb/esp-idf-cs3.git
-cd esp-idf-cs3/
+git clone https://github.com/cfrankb/esp32-ili9488-jewel.git
+cd esp32-ili9488-jewel/
 idf.py set-target {esp32/esp32s2/esp32s3/esp32c3}
 idf.py menuconfig
 idf.py flash
@@ -37,11 +37,9 @@ idf.py flash
 | ------- | ---------- | ------------ | ----------- |
 | ILI9488 | 320x480    | 40M          | False       |
 
-## ST7789
+## ILI9488
 
-https://www.aliexpress.com/item/1005004343881408.html
-
-| ST7789   | wirecolor | GPIO Pin   |
+| ILI9488  | wirecolor | GPIO Pin   |
 | -------- | --------- | ---------- |
 | SDK/MISO | purple    |            |
 | LED      | grey      | 32 (BL???) |
@@ -64,5 +62,3 @@ https://www.aliexpress.com/item/32345829014.html
 | SW       | blue      | 26       |
 | GRN      | black     |          |
 | VCC      | red       | 3.3v     |
-
-https://github.com/DiegoPaezA/ESP32-freeRTOS
