@@ -1,6 +1,6 @@
 # About
 
-This project is a game port to ESP-32 microcontroller of a Windows 3.1 Game.
+This project is a game port to ESP-32 microcontroller of an old Windows 3.1 Game.
 
 Current status is alpha. 90% of the core mechanic has been implemented.
 
@@ -35,17 +35,17 @@ idf.py flash
 
 ## ILI9488
 
-| ILI9488  | wirecolor | GPIO Pin   |
-| -------- | --------- | ---------- |
-| SDK/MISO | purple    |            |
-| LED      | grey      | 32 (BL???) |
-| SCK      | yellow    | 18         |
-| SDI/MOSI | orange    | 23         |
-| DC       | green     | 27         |
-| RESET    | brown     | 33         |
-| CS       | white     | 14         |
-| GRN      | black     |            |
-| VCC      | red       | 3.3v or 5v |
+| ILI9488  | wirecolor | GPIO Pin |
+| -------- | --------- | -------- |
+| SDK/MISO | purple    | -        |
+| LED/BL   | grey      | 32       |
+| SCK      | yellow    | 18       |
+| SDI/MOSI | orange    | 23       |
+| DC       | green     | 27       |
+| RESET    | brown     | 33       |
+| CS       | white     | 14       |
+| GRN      | black     | GRN      |
+| VCC      | red       | 3.3v     |
 
 ## Joystick
 
@@ -56,5 +56,5 @@ https://www.aliexpress.com/item/32345829014.html
 | VRX      | brown     | 35       |
 | VRY      | white     | 34       |
 | SW       | blue      | 26       |
-| GRN      | black     |          |
+| GRN      | black     | GRN      |
 | VCC      | red       | 3.3v     |

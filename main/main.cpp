@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <vector>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_system.h"
@@ -22,10 +23,8 @@
 #include "grid.h"
 #include "shape.h"
 
-#include <vector>
-
 // #include "tp_spi.h"
-//  #include "xpt2046.h"
+// #include "xpt2046.h"
 
 #define TILE_BLANK 0
 #define INVALID -1
@@ -65,7 +64,15 @@ const uint8_t rows = height / gridSize;
 CGrid grid(cols, rows);
 static const char *TAG = "main";
 
+const uint16_t blocksPerLevel = 10;
+const uint16_t levelBonus = 50;
+const uint16_t speedOffset = 5;
+
 uint64_t ticks = 0;
+uint16_t gameSpeed;
+uint32_t score;
+uint16_t level;
+uint16_t blockCount;
 
 void setupButtons()
 {
@@ -106,8 +113,7 @@ uint8_t readButtons()
 	int b_button = gpio_get_level(JOYSTICK_B_BUTTON);
 	int c_button = gpio_get_level(JOYSTICK_C_BUTTON);
 	int d_button = gpio_get_level(JOYSTICK_D_BUTTON);
-
-	printf("Buttons: %.2x %.2x %.2x %.2x\n", a_button, b_button, c_button, d_button);
+	// printf("Buttons: %.2x %.2x %.2x %.2x\n", a_button, b_button, c_button, d_button);
 	return a_button |
 		   (b_button << 1) |
 		   (c_button << 2) |
@@ -180,6 +186,11 @@ void drawShape(CShape &shape, bool erase = false)
 		drawTile(x, y, tile);
 		grid.at(x, y) = tile;
 	}
+}
+
+void eraseShape(CShape &shape)
+{
+	drawShape(shape, true);
 }
 
 bool canMoveShape(CShape &shape, int aim)
@@ -307,15 +318,16 @@ void blocksFromCols(std::set<int16_t> &chCols, std::vector<pos_t> &blocks)
 	}
 }
 
-void managePeers(CShape &shape)
+uint16_t managePeers(CShape &shape)
 {
+	uint16_t removedBlocks = 0;
 	uint8_t x = shape.x();
 	std::vector<pos_t> blocks;
 	blocksFromShape(shape, blocks);
+	std::set<int16_t> chCols;
+	peers_t allPeers;
 	while (blocks.size() != 0)
 	{
-		std::set<int16_t> chCols;
-		peers_t allPeers;
 		for (auto p = blocks.begin(); p != blocks.end(); ++p)
 		{
 			peers_t peers;
@@ -339,11 +351,24 @@ void managePeers(CShape &shape)
 			}
 		}
 		removePeers(allPeers);
+		removedBlocks += allPeers.size();
 		vTaskDelay(50 / portTICK_PERIOD_MS);
 		collapseCols(chCols);
 		vTaskDelay(50 / portTICK_PERIOD_MS);
 		blocksFromCols(chCols, blocks);
+		allPeers.clear();
+		chCols.clear();
 	}
+	return removedBlocks;
+}
+
+void initGame()
+{
+	gameSpeed = 50;
+	score = 0;
+	level = 1;
+	blockCount = 0;
+	grid.clear();
 }
 
 extern "C" void app_main(void)
@@ -355,6 +380,7 @@ extern "C" void app_main(void)
 	setupButtons();
 	initSpiffs();
 	loadTitles();
+	initGame();
 
 	// tp_spi_init();
 	// xpt2046_init();
@@ -363,7 +389,6 @@ extern "C" void app_main(void)
 
 	clear(BLACK);
 	CShape shape(random() % cols, orgY);
-	grid.clear();
 	drawShape(shape);
 
 	uint32_t cycles = 0;
@@ -383,7 +408,7 @@ extern "C" void app_main(void)
 			{
 				if (canMoveShape(shape, CShape::LEFT))
 				{
-					drawShape(shape, true);
+					eraseShape(shape);
 					shape.move(CShape::LEFT);
 					drawShape(shape);
 				}
@@ -392,17 +417,27 @@ extern "C" void app_main(void)
 			{
 				if (canMoveShape(shape, CShape::RIGHT))
 				{
-					drawShape(shape, true);
+					eraseShape(shape);
 					shape.move(CShape::RIGHT);
 					drawShape(shape);
 				}
 			}
+			else if (buttons & MASK_D)
+			{
+				eraseShape(shape);
+				while (canMoveShape(shape, CShape::DOWN))
+				{
+					shape.move(CShape::DOWN);
+				}
+				drawShape(shape);
+			}
 		}
-		if ((cycles & 31) == 0)
+		if ((cycles % gameSpeed) == 0)
 		{
+			// move shape down
 			if (canMoveShape(shape, CShape::DOWN))
 			{
-				drawShape(shape, true);
+				eraseShape(shape);
 				shape.move(CShape::DOWN);
 			}
 			else
@@ -411,10 +446,28 @@ extern "C" void app_main(void)
 				{
 					grid.clear();
 					clear(BLACK);
+					initGame();
+					cycles = 0;
 				}
 				else
 				{
-					managePeers(shape);
+					uint16_t removedBlocks = managePeers(shape);
+					score += removedBlocks;
+					if (removedBlocks)
+					{
+						printf("removedBlocks:%u; score: %lu\n", removedBlocks, score);
+					}
+					blockCount += removedBlocks;
+					bool levelChanged = false;
+					while (blockCount > blocksPerLevel)
+					{
+						level++;
+						blockCount -= blocksPerLevel;
+						score += levelBonus;
+						gameSpeed -= speedOffset;
+						levelChanged = true;
+					}
+					vTaskDelay(levelChanged ? 150 : 100 / portTICK_PERIOD_MS);
 				}
 				shape.newShape(random() % cols, orgY);
 			}
