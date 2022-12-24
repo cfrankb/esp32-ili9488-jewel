@@ -22,11 +22,23 @@
 #include "grid.h"
 #include "shape.h"
 
+#include <vector>
+
 // #include "tp_spi.h"
 //  #include "xpt2046.h"
 
 #define TILE_BLANK 0
 #define INVALID -1
+
+#define JOYSTICK_A_BUTTON GPIO_NUM_16
+#define JOYSTICK_B_BUTTON GPIO_NUM_17
+#define JOYSTICK_C_BUTTON GPIO_NUM_21
+#define JOYSTICK_D_BUTTON GPIO_NUM_19 // gray
+
+#define MASK_A 1
+#define MASK_B 2
+#define MASK_C 4
+#define MASK_D 8
 
 static void IRAM_ATTR lv_tick_task(void);
 
@@ -51,8 +63,56 @@ const uint16_t gridSize = 2 * tileWidth;
 const uint8_t cols = width / gridSize;
 const uint8_t rows = height / gridSize;
 CGrid grid(cols, rows);
+static const char *TAG = "main";
 
 uint64_t ticks = 0;
+
+void setupButtons()
+{
+	esp_err_t ret;
+	ret = gpio_set_direction(JOYSTICK_A_BUTTON, GPIO_MODE_INPUT);
+	if (ret != ESP_OK)
+	{
+		ESP_LOGE(TAG, "[A] gpio_set_direction Failed (%s)", esp_err_to_name(ret));
+	}
+
+	ret = gpio_set_direction(JOYSTICK_B_BUTTON, GPIO_MODE_INPUT);
+	if (ret != ESP_OK)
+	{
+		ESP_LOGE(TAG, "[B] gpio_set_direction Failed (%s)", esp_err_to_name(ret));
+	}
+
+	ret = gpio_set_direction(JOYSTICK_C_BUTTON, GPIO_MODE_INPUT);
+	if (ret != ESP_OK)
+	{
+		ESP_LOGE(TAG, "[C] gpio_set_direction Failed (%s)", esp_err_to_name(ret));
+	}
+
+	ret = gpio_set_direction(JOYSTICK_D_BUTTON, GPIO_MODE_INPUT);
+	if (ret != ESP_OK)
+	{
+		ESP_LOGE(TAG, "[C] gpio_set_direction Failed (%s)", esp_err_to_name(ret));
+	}
+
+	gpio_set_pull_mode(JOYSTICK_A_BUTTON, GPIO_PULLUP_PULLDOWN);
+	gpio_set_pull_mode(JOYSTICK_B_BUTTON, GPIO_PULLUP_PULLDOWN);
+	gpio_set_pull_mode(JOYSTICK_C_BUTTON, GPIO_PULLUP_PULLDOWN);
+	gpio_set_pull_mode(JOYSTICK_D_BUTTON, GPIO_PULLUP_PULLDOWN);
+}
+
+uint8_t readButtons()
+{
+	int a_button = gpio_get_level(JOYSTICK_A_BUTTON);
+	int b_button = gpio_get_level(JOYSTICK_B_BUTTON);
+	int c_button = gpio_get_level(JOYSTICK_C_BUTTON);
+	int d_button = gpio_get_level(JOYSTICK_D_BUTTON);
+
+	printf("Buttons: %.2x %.2x %.2x %.2x\n", a_button, b_button, c_button, d_button);
+	return a_button |
+		   (b_button << 1) |
+		   (c_button << 2) |
+		   (d_button << 3);
+}
 
 void drawTile(int x, int y, uint8_t tile)
 {
@@ -220,20 +280,26 @@ void removePeers(peers_t &peers)
 void findPeers(CShape &shape)
 {
 	uint8_t x = shape.x();
+	std::vector<pos_t> blocks;
 	for (int i = 0; i < shape.height(); ++i)
 	{
 		uint8_t y = i + shape.y();
 		if (grid.isValidPos(x, y) && grid.at(x, y))
 		{
-			// printf(">>> looking for :%x (x=%d, y=%d)\n",
-			//		   static_cast<int>(grid.at(x, y)), x, y);
-			peers_t peers;
-			grid.findPeers(x, y, peers);
-			//	printf(">>> found:%d\n", peers.size());
-			if (peers.size() >= 3)
-			{
-				removePeers(peers);
-			}
+			pos_t block = {x, y};
+			blocks.push_back(block);
+		}
+	}
+
+	for (auto p = blocks.begin(); p != blocks.end(); ++p)
+	{
+		peers_t peers;
+		pos_t pos = *p;
+		grid.findPeers(pos.x, pos.y, peers);
+		//	printf(">>> found:%d\n", peers.size());
+		if (peers.size() >= 3)
+		{
+			removePeers(peers);
 		}
 	}
 }
@@ -244,6 +310,7 @@ extern "C" void app_main(void)
 
 	disp_spi_init();
 	ili9488_init();
+	setupButtons();
 	initSpiffs();
 	loadTitles();
 
@@ -256,28 +323,66 @@ extern "C" void app_main(void)
 	CShape shape(random() % cols, orgY);
 	grid.clear();
 	drawShape(shape);
+
+	uint32_t cycles = 0;
 	while (1)
 	{
-		drawShape(shape);
-		vTaskDelay(250 / portTICK_PERIOD_MS);
-		if (canMoveShape(shape, CShape::DOWN))
+		vTaskDelay(10 / portTICK_PERIOD_MS);
+
+		if ((cycles & 15) == 0)
 		{
-			drawShape(shape, true);
-			shape.move(CShape::DOWN);
-		}
-		else
-		{
-			if (shape.y() <= 0)
+			uint8_t buttons = readButtons();
+
+			if (buttons & MASK_A)
 			{
-				grid.clear();
-				clear(BLACK);
+				shape.shift();
+				drawShape(shape);
+			}
+
+			if (buttons & MASK_B)
+			{
+				if (canMoveShape(shape, CShape::LEFT))
+				{
+					drawShape(shape, true);
+					shape.move(CShape::LEFT);
+					drawShape(shape);
+				}
+			}
+
+			else if (buttons & MASK_C)
+			{
+				if (canMoveShape(shape, CShape::RIGHT))
+				{
+					drawShape(shape, true);
+					shape.move(CShape::RIGHT);
+					drawShape(shape);
+				}
+			}
+		}
+		if ((cycles & 31) == 0)
+		{
+
+			if (canMoveShape(shape, CShape::DOWN))
+			{
+				drawShape(shape, true);
+				shape.move(CShape::DOWN);
 			}
 			else
 			{
-				findPeers(shape);
+				if (shape.y() <= 0)
+				{
+					grid.clear();
+					clear(BLACK);
+				}
+				else
+				{
+					findPeers(shape);
+				}
+				shape.newShape(random() % cols, orgY);
 			}
-			shape.newShape(random() % cols, orgY);
+			drawShape(shape);
 		}
+		++cycles;
 	}
 
 	// All done, unmount partition and disable SPIFFS

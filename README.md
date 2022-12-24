@@ -47,7 +47,7 @@ idf.py flash
 | SDI/MOSI | orange    | 23         |
 | DC       | green     | 27         |
 | RESET    | brown     | 33         |
-| CS       | white     | 14 or 25   |
+| CS       | white     | 14         |
 | GRN      | black     |            |
 | VCC      | red       | 3.3v or 5v |
 
