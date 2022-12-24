@@ -257,19 +257,17 @@ void collapseCol(int16_t x)
 
 void removePeers(peers_t &peers)
 {
-	std::set<int16_t> chCols;
 	for (std::set<uint32_t>::iterator it = peers.begin(); it != peers.end(); ++it)
 	{
 		uint32_t key = *it;
 		pos_t p = CGrid::toPos(key);
 		grid.at(p.x, p.y) = TILE_BLANK;
 		drawTile(p.x, p.y, TILE_BLANK);
-		if (chCols.count(p.x) == 0)
-		{
-			chCols.insert(p.x);
-		}
 	}
+}
 
+void collapseCols(std::set<int16_t> &chCols)
+{
 	for (std::set<int16_t>::iterator it = chCols.begin(); it != chCols.end(); ++it)
 	{
 		int16_t x = *it;
@@ -277,10 +275,10 @@ void removePeers(peers_t &peers)
 	}
 }
 
-void findPeers(CShape &shape)
+void blocksFromShape(CShape &shape, std::vector<pos_t> &blocks)
 {
+	blocks.clear();
 	uint8_t x = shape.x();
-	std::vector<pos_t> blocks;
 	for (int i = 0; i < shape.height(); ++i)
 	{
 		uint8_t y = i + shape.y();
@@ -290,17 +288,61 @@ void findPeers(CShape &shape)
 			blocks.push_back(block);
 		}
 	}
+}
 
-	for (auto p = blocks.begin(); p != blocks.end(); ++p)
+void blocksFromCols(std::set<int16_t> &chCols, std::vector<pos_t> &blocks)
+{
+	blocks.clear();
+	for (std::set<int16_t>::iterator it = chCols.begin(); it != chCols.end(); ++it)
 	{
-		peers_t peers;
-		pos_t pos = *p;
-		grid.findPeers(pos.x, pos.y, peers);
-		//	printf(">>> found:%d\n", peers.size());
-		if (peers.size() >= 3)
+		int16_t x = *it;
+		for (int16_t y = 0; y < rows; ++y)
 		{
-			removePeers(peers);
+			if (grid.at(x, y) != TILE_BLANK)
+			{
+				pos_t block = {x, y};
+				blocks.push_back(block);
+			}
 		}
+	}
+}
+
+void managePeers(CShape &shape)
+{
+	uint8_t x = shape.x();
+	std::vector<pos_t> blocks;
+	blocksFromShape(shape, blocks);
+	while (blocks.size() != 0)
+	{
+		std::set<int16_t> chCols;
+		peers_t allPeers;
+		for (auto p = blocks.begin(); p != blocks.end(); ++p)
+		{
+			peers_t peers;
+			pos_t pos = *p;
+			grid.findPeers(pos.x, pos.y, peers);
+			if (peers.size() >= 3)
+			{
+				for (std::set<uint32_t>::iterator it = peers.begin(); it != peers.end(); ++it)
+				{
+					uint32_t key = *it;
+					pos_t p = CGrid::toPos(key);
+					if (chCols.count(p.x) == 0)
+					{
+						chCols.insert(p.x);
+					}
+					if (allPeers.count(key) == 0)
+					{
+						allPeers.insert(key);
+					}
+				}
+			}
+		}
+		removePeers(allPeers);
+		vTaskDelay(50 / portTICK_PERIOD_MS);
+		collapseCols(chCols);
+		vTaskDelay(50 / portTICK_PERIOD_MS);
+		blocksFromCols(chCols, blocks);
 	}
 }
 
@@ -332,14 +374,12 @@ extern "C" void app_main(void)
 		if ((cycles & 15) == 0)
 		{
 			uint8_t buttons = readButtons();
-
 			if (buttons & MASK_A)
 			{
 				shape.shift();
 				drawShape(shape);
 			}
-
-			if (buttons & MASK_B)
+			else if (buttons & MASK_B)
 			{
 				if (canMoveShape(shape, CShape::LEFT))
 				{
@@ -348,7 +388,6 @@ extern "C" void app_main(void)
 					drawShape(shape);
 				}
 			}
-
 			else if (buttons & MASK_C)
 			{
 				if (canMoveShape(shape, CShape::RIGHT))
@@ -361,7 +400,6 @@ extern "C" void app_main(void)
 		}
 		if ((cycles & 31) == 0)
 		{
-
 			if (canMoveShape(shape, CShape::DOWN))
 			{
 				drawShape(shape, true);
@@ -376,7 +414,7 @@ extern "C" void app_main(void)
 				}
 				else
 				{
-					findPeers(shape);
+					managePeers(shape);
 				}
 				shape.newShape(random() % cols, orgY);
 			}
