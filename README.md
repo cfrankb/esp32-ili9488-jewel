@@ -4,13 +4,9 @@ This project is a game port to ESP-32 microcontroller of a Windows 3.1 Game.
 
 Current status is alpha. 90% of the core mechanic has been implemented.
 
-## Original Windows 3.1
+## ESP-32 IL9488/SPI
 
-![Image](images/jewel-master.png 'icon')
-
-## ESP-32
-
-![Image](images/coming-soon.webp 'icon')
+![Image](images/20221224_070828.jpg 'icon')
 
 I am also releasing the source code for the mcxz compiler:
 https://github.com/cfrankb/cs3-map-edit/tree/master/tools/mcxz
