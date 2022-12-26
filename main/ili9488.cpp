@@ -286,6 +286,75 @@ void ili9488_fill(int32_t x1, int32_t y1, int32_t x2, int32_t y2, color18_t colo
 	ili9488_send_color(buf, size * sizeof(color18_t));
 }
 
+void ili9488_drawFont(int32_t x1, int32_t y1, uint8_t *fontBits)
+{
+	uint8_t data[4];
+
+	const uint8_t h = 8;
+	const uint8_t w = 8;
+
+	int32_t x2 = x1 + w * 2 - 1;
+	int32_t y2 = y1 + h * 2;
+
+	const uint16_t bufSize = w * h * sizeof(color18_t) * 4;
+	uint16_t bytesLeft = bufSize;
+	static uint8_t buf[bufSize];
+	const uint16_t dmaMax = 2048;
+
+	// color18_t *s = reinterpret_cast<color18_t *>(tile);
+	uint8_t *s = fontBits;
+	color18_t *d = reinterpret_cast<color18_t *>(buf);
+
+	color18_t color = {255, 255, 255};
+	color18_t bkcolor = {0, 0, 0};
+
+	for (int y = 0; y < h; ++y)
+	{
+		for (int i = 0; i < 2; ++i)
+		{
+			uint8_t bits = s[y];
+			for (int x = 0; x < w; ++x)
+			{
+				d[x * 2] = (bits & 1) ? color : bkcolor;
+				d[x * 2 + 1] = (bits & 1) ? color : bkcolor;
+				bits = bits >> 1;
+			}
+			d += w * 2;
+		}
+	}
+
+	/*Column addresses*/
+	ili9488_send_cmd(0x2A);
+	data[0] = (x1 >> 8) & 0xFF;
+	data[1] = x1 & 0xFF;
+	data[2] = (x2 >> 8) & 0xFF;
+	data[3] = x2 & 0xFF;
+	ili9488_send_data(data, 4);
+
+	/*Page addresses*/
+	ili9488_send_cmd(0x2B);
+	data[0] = (y1 >> 8) & 0xFF;
+	data[1] = y1 & 0xFF;
+	data[2] = (y2 >> 8) & 0xFF;
+	data[3] = y2 & 0xFF;
+	ili9488_send_data(data, 4);
+
+	/*Memory write*/
+	ili9488_send_cmd(0x2C);
+
+	uint8_t *ptr = buf;
+	while (bytesLeft)
+	{
+		uint16_t size = std::min(bytesLeft, dmaMax);
+		ili9488_send_color(ptr, size);
+		ptr += size;
+		bytesLeft -= size;
+	}
+
+	/*Send the remaining data*/
+	ili9488_send_color(buf, 1);
+}
+
 /**********************
  *   STATIC FUNCTIONS
  **********************/

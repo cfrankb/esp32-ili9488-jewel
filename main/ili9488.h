@@ -44,6 +44,7 @@ extern "C"
     void ili9488_init(void);
     void ili9488_fill(int32_t x1, int32_t y1, int32_t x2, int32_t y2, color18_t color);
     void ili9488_drawTile(int32_t x1, int32_t y1, void *tile);
+    void ili9488_drawFont(int32_t x1, int32_t y1, uint8_t *fontBits);
 
     // void ili9488_flush(int32_t x1, int32_t y1, int32_t x2, int32_t y2, const lv_color_t *color_map);
 

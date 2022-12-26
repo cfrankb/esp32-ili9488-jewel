@@ -6,6 +6,7 @@ set(SOURCES
     "tileset.cpp"
     "grid.cpp"
     "shape.cpp"
+    "font.cpp"
 )
 idf_component_register(
     SRCS ${SOURCES}

@@ -22,6 +22,7 @@
 #include "tileset.h"
 #include "grid.h"
 #include "shape.h"
+#include "font.h"
 
 // #include "tp_spi.h"
 // #include "xpt2046.h"
@@ -62,17 +63,19 @@ const uint16_t gridSize = 2 * tileWidth;
 const uint8_t cols = width / gridSize;
 const uint8_t rows = height / gridSize;
 CGrid grid(cols, rows);
+CFont font(CFont::shift8bytes);
 static const char *TAG = "main";
 
-const uint16_t blocksPerLevel = 10;
-const uint16_t levelBonus = 50;
-const uint16_t speedOffset = 5;
+const uint16_t blocksPerLevel = 50;
+const uint16_t levelBonus = 25;
+const uint16_t speedOffset = 3;
 
 uint64_t ticks = 0;
 uint16_t gameSpeed;
 uint32_t score;
 uint16_t level;
 uint16_t blockCount;
+uint16_t totalBlocks;
 
 void setupButtons()
 {
@@ -120,6 +123,15 @@ uint8_t readButtons()
 		   (d_button << 3);
 }
 
+void drawString(int x, int y, const char *s)
+{
+	for (int i = 0; s[i]; ++i)
+	{
+		int j = s[i] - 32;
+		ili9488_drawFont(x * gridSize + i * 16, y * gridSize, font[j]);
+	}
+}
+
 void drawTile(int x, int y, uint8_t tile)
 {
 	ili9488_drawTile(x * gridSize, y * gridSize, tiles[tile]);
@@ -136,7 +148,7 @@ void drawGrid()
 	}
 }
 
-void loadTitles()
+void loadTiles()
 {
 	tiles.read("/spiffs/blocks.mcz");
 }
@@ -368,7 +380,16 @@ void initGame()
 	score = 0;
 	level = 1;
 	blockCount = 0;
+	totalBlocks = 0;
 	grid.clear();
+}
+
+void loadFont()
+{
+	if (!font.read("/spiffs/bitfont.bin"))
+	{
+		printf("failed to read font\n");
+	}
 }
 
 extern "C" void app_main(void)
@@ -379,7 +400,8 @@ extern "C" void app_main(void)
 	ili9488_init();
 	setupButtons();
 	initSpiffs();
-	loadTitles();
+	loadTiles();
+	loadFont();
 	initGame();
 
 	// tp_spi_init();
@@ -390,6 +412,7 @@ extern "C" void app_main(void)
 	clear(BLACK);
 	CShape shape(random() % cols, orgY);
 	drawShape(shape);
+	drawString(0, rows - 1, "Welcome to OpenJewel");
 
 	uint32_t cycles = 0;
 	while (1)
@@ -458,6 +481,7 @@ extern "C" void app_main(void)
 						printf("removedBlocks:%u; score: %lu\n", removedBlocks, score);
 					}
 					blockCount += removedBlocks;
+					totalBlocks += removedBlocks;
 					bool levelChanged = false;
 					while (blockCount > blocksPerLevel)
 					{
@@ -467,7 +491,7 @@ extern "C" void app_main(void)
 						gameSpeed -= speedOffset;
 						levelChanged = true;
 					}
-					vTaskDelay(levelChanged ? 150 : 100 / portTICK_PERIOD_MS);
+					vTaskDelay(levelChanged ? 100 : 50 / portTICK_PERIOD_MS);
 				}
 				shape.newShape(random() % cols, orgY);
 			}
