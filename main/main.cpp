@@ -6,6 +6,8 @@
    software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
    CONDITIONS OF ANY KIND, either express or implied.
 */
+
+#define INCLUDE_vTaskDelay
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -50,7 +52,9 @@ const color18_t BLUE = {0, 0, 0xff};
 const color18_t CYAN = {0, 0xff, 0xff};
 const color18_t YELLOW = {0xff, 0xff, 0};
 const color18_t PURPLE = {0xff, 0, 0xff};
-const color18_t GREY = {0x80, 0x80, 0x80};
+const color18_t MEDIUM_GREY = {0x40, 0x40, 0x40};
+const color18_t DARK_GREY = {0x20, 0x20, 0x20};
+const color18_t LIGHT_GREY = {0x80, 0x80, 0x80};
 const color18_t PINK = {255, 192, 203};
 
 const uint8_t tileWidth = 16;
@@ -129,12 +133,12 @@ uint8_t readButtons()
 		   (d_button << 3);
 }
 
-void drawString(int x, int y, const char *s)
+void drawString(int x, int y, const char *s, color18_t color = {255, 255, 255}, color18_t bkColor = {0, 0, 0})
 {
 	for (int i = 0; s[i]; ++i)
 	{
 		int j = s[i] - 32;
-		ili9488_drawFont(x * gridSize + i * 16, y * gridSize, font[j]);
+		ili9488_drawFont(x + i * 16, y, font[j], color, bkColor);
 	}
 }
 
@@ -192,7 +196,7 @@ void drawShape(CShape &shape, bool erase = false)
 	for (int8_t i = 0; i < CShape::height(); ++i)
 	{
 		int8_t y = shape.y() + i;
-		if (y < 0)
+		if (y < 1)
 		{
 			continue;
 		}
@@ -383,7 +387,9 @@ void initGame()
 	blockCount = 0;
 	totalBlocks = 0;
 	blockRange = CShape::DEFAULT_RANGE;
+	clear(BLACK);
 	grid.clear();
+	ili9488_fill(0, 0, 320, 32, MEDIUM_GREY);
 	printf("(*) grid cleared\n");
 }
 
@@ -393,6 +399,17 @@ void loadFont()
 	{
 		printf("failed to read font\n");
 	}
+}
+
+#include <cstring>
+
+void drawStatus()
+{
+
+	char t[32];
+	sprintf(t, "%.6ld LEVEL %.2d", score, level);
+
+	drawString(0, 0, t, YELLOW, MEDIUM_GREY);
 }
 
 extern "C" void app_main(void)
@@ -411,10 +428,9 @@ extern "C" void app_main(void)
 
 	esp_register_freertos_tick_hook(lv_tick_task);
 
-	clear(BLACK);
 	CShape shape(random() % cols, orgY);
 	drawShape(shape);
-	drawString(0, rows - 1, "Welcome to OpenJewel");
+	drawStatus();
 
 	uint32_t cycles = 0;
 	while (1)
@@ -469,9 +485,9 @@ extern "C" void app_main(void)
 			{
 				if (shape.y() <= 0)
 				{
-					grid.clear();
-					clear(BLACK);
+
 					initGame();
+					drawStatus();
 					cycles = 0;
 				}
 				else
@@ -501,6 +517,10 @@ extern "C" void app_main(void)
 						{
 							blockRange = std::min(blockRange + 1, tiles.size() - 1);
 						}
+					}
+					if (removedBlocks)
+					{
+						drawStatus();
 					}
 
 					vTaskDelay(levelChanged ? 100 : 50 / portTICK_PERIOD_MS);

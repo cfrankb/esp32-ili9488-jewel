@@ -286,7 +286,12 @@ void ili9488_fill(int32_t x1, int32_t y1, int32_t x2, int32_t y2, color18_t colo
 	ili9488_send_color(buf, size * sizeof(color18_t));
 }
 
-void ili9488_drawFont(int32_t x1, int32_t y1, uint8_t *fontBits)
+void ili9488_drawFont(
+	int32_t x1,
+	int32_t y1,
+	const uint8_t *fontBits,
+	const color18_t color,
+	const color18_t bkcolor)
 {
 	const uint8_t h = 8;
 	const uint8_t w = 8;
@@ -297,10 +302,7 @@ void ili9488_drawFont(int32_t x1, int32_t y1, uint8_t *fontBits)
 	const uint16_t bufSize = w * h * sizeof(color18_t) * 4;
 	uint16_t bytesLeft = bufSize;
 	static uint8_t buf[bufSize];
-
 	color18_t *d = reinterpret_cast<color18_t *>(buf);
-	color18_t color = {255, 255, 255};
-	color18_t bkcolor = {0, 0, 0};
 
 	for (int y = 0; y < h; ++y)
 	{
