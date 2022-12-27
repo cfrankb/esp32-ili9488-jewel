@@ -52,6 +52,16 @@ static void ili9488_send_color(void *data, uint16_t length);
  *   GLOBAL FUNCTIONS
  **********************/
 
+const uint16_t dmaMax = 2048;
+
+typedef struct
+{
+	int32_t x1;
+	int32_t x2;
+	int32_t y1;
+	int32_t y2;
+} rect_t;
+
 void ili9488_init(void)
 {
 	lcd_init_cmd_t ili_init_cmds[] = {
@@ -177,10 +187,47 @@ void ili9488_init(void)
 	gpio_set_level(ILI9488_BCKL, 1);
 }
 
-void ili9488_drawTile(int32_t x1, int32_t y1, void *tile)
+void initWriteWindow(const rect_t &rect)
 {
 	uint8_t data[4];
 
+	/*Column addresses*/
+	ili9488_send_cmd(0x2A);
+	data[0] = (rect.x1 >> 8) & 0xFF;
+	data[1] = rect.x1 & 0xFF;
+	data[2] = (rect.x2 >> 8) & 0xFF;
+	data[3] = rect.x2 & 0xFF;
+	ili9488_send_data(data, 4);
+
+	/*Page addresses*/
+	ili9488_send_cmd(0x2B);
+	data[0] = (rect.y1 >> 8) & 0xFF;
+	data[1] = rect.y1 & 0xFF;
+	data[2] = (rect.y2 >> 8) & 0xFF;
+	data[3] = rect.y2 & 0xFF;
+	ili9488_send_data(data, 4);
+
+	/*Memory write*/
+	ili9488_send_cmd(0x2C);
+}
+
+void commitWrite(uint8_t *buf, uint16_t bytesLeft)
+{
+	uint8_t *ptr = buf;
+	while (bytesLeft)
+	{
+		uint16_t size = std::min(bytesLeft, dmaMax);
+		ili9488_send_color(ptr, size);
+		ptr += size;
+		bytesLeft -= size;
+	}
+
+	/*Send the remaining data*/
+	ili9488_send_color(buf, 1);
+}
+
+void ili9488_drawTile(int32_t x1, int32_t y1, void *tile)
+{
 	const uint8_t h = 16;
 	const uint8_t w = 16;
 
@@ -190,7 +237,6 @@ void ili9488_drawTile(int32_t x1, int32_t y1, void *tile)
 	const uint16_t bufSize = w * h * sizeof(color18_t) * 4;
 	uint16_t bytesLeft = bufSize;
 	static uint8_t buf[bufSize];
-	const uint16_t dmaMax = 2048;
 
 	color18_t *s = reinterpret_cast<color18_t *>(tile);
 	color18_t *d = reinterpret_cast<color18_t *>(buf);
@@ -209,64 +255,18 @@ void ili9488_drawTile(int32_t x1, int32_t y1, void *tile)
 		s += w;
 	}
 
-	/*Column addresses*/
-	ili9488_send_cmd(0x2A);
-	data[0] = (x1 >> 8) & 0xFF;
-	data[1] = x1 & 0xFF;
-	data[2] = (x2 >> 8) & 0xFF;
-	data[3] = x2 & 0xFF;
-	ili9488_send_data(data, 4);
-
-	/*Page addresses*/
-	ili9488_send_cmd(0x2B);
-	data[0] = (y1 >> 8) & 0xFF;
-	data[1] = y1 & 0xFF;
-	data[2] = (y2 >> 8) & 0xFF;
-	data[3] = y2 & 0xFF;
-	ili9488_send_data(data, 4);
-
-	/*Memory write*/
-	ili9488_send_cmd(0x2C);
-
-	uint8_t *ptr = buf;
-	while (bytesLeft)
-	{
-		uint16_t size = std::min(bytesLeft, dmaMax);
-		ili9488_send_color(ptr, size);
-		ptr += size;
-		bytesLeft -= size;
-	}
-
-	/*Send the remaining data*/
-	ili9488_send_color(buf, 1);
+	rect_t rect = {x1, x2, y1, y2};
+	initWriteWindow(rect);
+	commitWrite(buf, bytesLeft);
 }
 
 // Used in unbuffered mode
 void ili9488_fill(int32_t x1, int32_t y1, int32_t x2, int32_t y2, color18_t color)
 {
-	uint8_t data[4];
-
-	/*Column addresses*/
-	ili9488_send_cmd(0x2A);
-	data[0] = (x1 >> 8) & 0xFF;
-	data[1] = x1 & 0xFF;
-	data[2] = (x2 >> 8) & 0xFF;
-	data[3] = x2 & 0xFF;
-	ili9488_send_data(data, 4);
-
-	/*Page addresses*/
-	ili9488_send_cmd(0x2B);
-	data[0] = (y1 >> 8) & 0xFF;
-	data[1] = y1 & 0xFF;
-	data[2] = (y2 >> 8) & 0xFF;
-	data[3] = y2 & 0xFF;
-	ili9488_send_data(data, 4);
-
-	/*Memory write*/
-	ili9488_send_cmd(0x2C);
+	rect_t rect = {x1, x2, y1, y2};
+	initWriteWindow(rect);
 
 	uint32_t size = (x2 - x1 + 1) * (y2 - y1 + 1);
-
 	static color18_t buf[LV_HOR_RES];
 
 	uint32_t i;
@@ -288,8 +288,6 @@ void ili9488_fill(int32_t x1, int32_t y1, int32_t x2, int32_t y2, color18_t colo
 
 void ili9488_drawFont(int32_t x1, int32_t y1, uint8_t *fontBits)
 {
-	uint8_t data[4];
-
 	const uint8_t h = 8;
 	const uint8_t w = 8;
 
@@ -299,12 +297,8 @@ void ili9488_drawFont(int32_t x1, int32_t y1, uint8_t *fontBits)
 	const uint16_t bufSize = w * h * sizeof(color18_t) * 4;
 	uint16_t bytesLeft = bufSize;
 	static uint8_t buf[bufSize];
-	const uint16_t dmaMax = 2048;
 
-	// color18_t *s = reinterpret_cast<color18_t *>(tile);
-	uint8_t *s = fontBits;
 	color18_t *d = reinterpret_cast<color18_t *>(buf);
-
 	color18_t color = {255, 255, 255};
 	color18_t bkcolor = {0, 0, 0};
 
@@ -312,7 +306,7 @@ void ili9488_drawFont(int32_t x1, int32_t y1, uint8_t *fontBits)
 	{
 		for (int i = 0; i < 2; ++i)
 		{
-			uint8_t bits = s[y];
+			uint8_t bits = fontBits[y];
 			for (int x = 0; x < w; ++x)
 			{
 				d[x * 2] = (bits & 1) ? color : bkcolor;
@@ -323,36 +317,9 @@ void ili9488_drawFont(int32_t x1, int32_t y1, uint8_t *fontBits)
 		}
 	}
 
-	/*Column addresses*/
-	ili9488_send_cmd(0x2A);
-	data[0] = (x1 >> 8) & 0xFF;
-	data[1] = x1 & 0xFF;
-	data[2] = (x2 >> 8) & 0xFF;
-	data[3] = x2 & 0xFF;
-	ili9488_send_data(data, 4);
-
-	/*Page addresses*/
-	ili9488_send_cmd(0x2B);
-	data[0] = (y1 >> 8) & 0xFF;
-	data[1] = y1 & 0xFF;
-	data[2] = (y2 >> 8) & 0xFF;
-	data[3] = y2 & 0xFF;
-	ili9488_send_data(data, 4);
-
-	/*Memory write*/
-	ili9488_send_cmd(0x2C);
-
-	uint8_t *ptr = buf;
-	while (bytesLeft)
-	{
-		uint16_t size = std::min(bytesLeft, dmaMax);
-		ili9488_send_color(ptr, size);
-		ptr += size;
-		bytesLeft -= size;
-	}
-
-	/*Send the remaining data*/
-	ili9488_send_color(buf, 1);
+	rect_t rect = {x1, x2, y1, y2};
+	initWriteWindow(rect);
+	commitWrite(buf, bytesLeft);
 }
 
 /**********************

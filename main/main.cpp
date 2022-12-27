@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <vector>
+#include <algorithm>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_system.h"
@@ -30,17 +31,15 @@
 #define TILE_BLANK 0
 #define INVALID -1
 
-#define JOYSTICK_A_BUTTON GPIO_NUM_16
-#define JOYSTICK_B_BUTTON GPIO_NUM_17
-#define JOYSTICK_C_BUTTON GPIO_NUM_21
+#define JOYSTICK_A_BUTTON GPIO_NUM_16 // orange
+#define JOYSTICK_B_BUTTON GPIO_NUM_17 // blue
+#define JOYSTICK_C_BUTTON GPIO_NUM_21 // yellow
 #define JOYSTICK_D_BUTTON GPIO_NUM_19 // gray
 
 #define MASK_A 1
 #define MASK_B 2
 #define MASK_C 4
 #define MASK_D 8
-
-static void IRAM_ATTR lv_tick_task(void);
 
 // https://github.com/anuprao/esp32_ili9488/blob/master/main/main.c
 
@@ -68,7 +67,7 @@ static const char *TAG = "main";
 
 const uint16_t blocksPerLevel = 50;
 const uint16_t levelBonus = 25;
-const uint16_t speedOffset = 3;
+const uint16_t speedOffset = 2;
 
 uint64_t ticks = 0;
 uint16_t gameSpeed;
@@ -76,6 +75,13 @@ uint32_t score;
 uint16_t level;
 uint16_t blockCount;
 uint16_t totalBlocks;
+int blockRange;
+
+// extern "C" static void IRAM_ATTR lv_tick_task(void);
+static void IRAM_ATTR lv_tick_task(void)
+{
+	++ticks;
+}
 
 void setupButtons()
 {
@@ -166,16 +172,12 @@ void test()
 	{
 		grid.random(tiles.size());
 		drawGrid();
-		//	clear(BLACK);
-		///		ili9488_drawTile(128, 128, tiles[i]);
 		ili9488_fill(0, 0, 64, 64, RED);
 		vTaskDelay(150 / portTICK_PERIOD_MS);
 		ili9488_fill(0, 0, 64, 64, GREEN);
 		vTaskDelay(150 / portTICK_PERIOD_MS);
 		ili9488_fill(0, 0, 64, 64, BLUE);
 		vTaskDelay(150 / portTICK_PERIOD_MS);
-
-		//	lv_task_handler();
 		i++;
 		if (i >= tiles.size())
 		{
@@ -333,7 +335,6 @@ void blocksFromCols(std::set<int16_t> &chCols, std::vector<pos_t> &blocks)
 uint16_t managePeers(CShape &shape)
 {
 	uint16_t removedBlocks = 0;
-	uint8_t x = shape.x();
 	std::vector<pos_t> blocks;
 	blocksFromShape(shape, blocks);
 	std::set<int16_t> chCols;
@@ -381,7 +382,9 @@ void initGame()
 	level = 1;
 	blockCount = 0;
 	totalBlocks = 0;
+	blockRange = CShape::DEFAULT_RANGE;
 	grid.clear();
+	printf("(*) grid cleared\n");
 }
 
 void loadFont()
@@ -395,7 +398,6 @@ void loadFont()
 extern "C" void app_main(void)
 {
 	const int8_t orgY = -2;
-
 	disp_spi_init();
 	ili9488_init();
 	setupButtons();
@@ -478,22 +480,32 @@ extern "C" void app_main(void)
 					score += removedBlocks;
 					if (removedBlocks)
 					{
-						printf("removedBlocks:%u; score: %lu\n", removedBlocks, score);
+						printf("blockCount %d + removedBlocks:%u = newTotal %d; score: %lu\n",
+							   blockCount, removedBlocks, blockCount + removedBlocks, score);
 					}
 					blockCount += removedBlocks;
 					totalBlocks += removedBlocks;
 					bool levelChanged = false;
-					while (blockCount > blocksPerLevel)
+					while (blockCount >= blocksPerLevel)
 					{
-						level++;
 						blockCount -= blocksPerLevel;
 						score += levelBonus;
 						gameSpeed -= speedOffset;
 						levelChanged = true;
 					}
+					if (levelChanged)
+					{
+						level++;
+						printf(">> level %d\n", level);
+						if (level % 3 == 0)
+						{
+							blockRange = std::min(blockRange + 1, tiles.size() - 1);
+						}
+					}
+
 					vTaskDelay(levelChanged ? 100 : 50 / portTICK_PERIOD_MS);
 				}
-				shape.newShape(random() % cols, orgY);
+				shape.newShape(random() % cols, orgY, blockRange);
 			}
 			drawShape(shape);
 		}
@@ -502,9 +514,4 @@ extern "C" void app_main(void)
 
 	// All done, unmount partition and disable SPIFFS
 	esp_vfs_spiffs_unregister(NULL);
-}
-
-static void IRAM_ATTR lv_tick_task(void)
-{
-	++ticks;
 }

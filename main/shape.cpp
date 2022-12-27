@@ -11,22 +11,23 @@ CShape::~CShape()
 {
 }
 
-void CShape::newShape(int8_t x, int8_t y)
+void CShape::newShape(int8_t x, int8_t y, int range)
 {
+    range = std::max(range, static_cast<int>(DEFAULT_RANGE));
     m_x = x;
     m_y = y;
-    m_tiles[0] = randomTile();
-    m_tiles[1] = randomTile();
-    m_tiles[2] = m_tiles[0] != m_tiles[1] ? m_tiles[0] : randomTile();
+    m_tiles[0] = randomTile(range);
+    m_tiles[1] = randomTile(range);
+    m_tiles[2] = m_tiles[0] != m_tiles[1] ? m_tiles[0] : randomTile(range);
     if ((random() & 3) == 0)
     {
         shift();
     }
 }
 
-uint8_t CShape::randomTile()
+uint8_t CShape::randomTile(int range)
 {
-    uint8_t v = ::random() % 0x0a;
+    uint8_t v = ::random() % range;
     return v ? v : 1;
 }
 

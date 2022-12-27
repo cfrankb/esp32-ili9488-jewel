@@ -10,7 +10,7 @@ public:
     CShape(int8_t x = 0, int8_t y = 0);
     ~CShape();
 
-    void newShape(int8_t x = 0, int8_t y = 0);
+    void newShape(int8_t x = 0, int8_t y = 0, int range = -1);
     int8_t x();
     int8_t y();
     uint8_t tile(int i);
@@ -25,11 +25,17 @@ public:
         DOWN = 1,
         LEFT = 2,
         RIGHT = 3,
-        HEIGHT = 3
+        HEIGHT = 3,
+    };
+
+    enum defs : int
+    {
+        DEFAULT_RANGE = 0xa
     };
 
 private:
-    uint8_t randomTile();
+    uint8_t
+    randomTile(int range);
     int8_t m_x;
     int8_t m_y;
     uint8_t m_tiles[HEIGHT];
