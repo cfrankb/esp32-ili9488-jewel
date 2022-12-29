@@ -1,5 +1,5 @@
 /**
- * @file ili9488.c
+ * @file ili9488.cpp
  *
  */
 
@@ -266,7 +266,7 @@ void ili9488_fill(int32_t x1, int32_t y1, int32_t x2, int32_t y2, color18_t colo
 	rect_t rect = {x1, x2, y1, y2};
 	initWriteWindow(rect);
 
-	uint32_t size = (x2 - x1 + 1) * (y2 - y1 + 1);
+	uint32_t size = (x2 - x1 + 1) * (y2 - y1 + 0);
 	static color18_t buf[LV_HOR_RES];
 
 	uint32_t i;

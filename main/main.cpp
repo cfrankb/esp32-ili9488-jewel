@@ -7,12 +7,12 @@
    CONDITIONS OF ANY KIND, either express or implied.
 */
 
-#define INCLUDE_vTaskDelay
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <vector>
 #include <algorithm>
+#include <cstring>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_system.h"
@@ -46,9 +46,12 @@
 // https://github.com/anuprao/esp32_ili9488/blob/master/main/main.c
 
 const color18_t BLACK = {0, 0, 0};
+const color18_t WHITE = {255, 255, 255};
 const color18_t RED = {0xff, 0, 0};
 const color18_t GREEN = {0, 0xff, 0};
 const color18_t BLUE = {0, 0, 0xff};
+const color18_t DARK_BLUE = {0, 0, 0x20};
+const color18_t MEDIUM_BLUE = {0, 0, 0x40};
 const color18_t CYAN = {0, 0xff, 0xff};
 const color18_t YELLOW = {0xff, 0xff, 0};
 const color18_t PURPLE = {0xff, 0, 0xff};
@@ -389,7 +392,7 @@ void initGame()
 	blockRange = CShape::DEFAULT_RANGE;
 	clear(BLACK);
 	grid.clear();
-	ili9488_fill(0, 0, 320, 32, MEDIUM_GREY);
+	ili9488_fill(0, 0, 320, 32, MEDIUM_BLUE);
 	printf("(*) grid cleared\n");
 }
 
@@ -401,15 +404,23 @@ void loadFont()
 	}
 }
 
-#include <cstring>
-
 void drawStatus()
 {
+	char t[16];
+	// Score
+	drawString(0, 0, "SCORE", CYAN, MEDIUM_BLUE);
+	sprintf(t, "%.6ld", score);
+	drawString(0, 16, t, CYAN, MEDIUM_BLUE);
 
-	char t[32];
-	sprintf(t, "%.6ld LEVEL %.2d", score, level);
+	// Level
+	drawString(7 * 16, 0, "LEVEL", WHITE, MEDIUM_BLUE);
+	sprintf(t, "  %.2d ", level);
+	drawString(7 * 16, 16, t, WHITE, MEDIUM_BLUE);
 
-	drawString(0, 0, t, YELLOW, MEDIUM_GREY);
+	// Blocks Left
+	drawString(14 * 16, 0, "LEFT", PURPLE, MEDIUM_BLUE);
+	sprintf(t, " %.2d ", blocksPerLevel - blockCount);
+	drawString(14 * 16, 16, t, PURPLE, MEDIUM_BLUE);
 }
 
 extern "C" void app_main(void)
@@ -485,7 +496,6 @@ extern "C" void app_main(void)
 			{
 				if (shape.y() <= 0)
 				{
-
 					initGame();
 					drawStatus();
 					cycles = 0;
@@ -494,11 +504,11 @@ extern "C" void app_main(void)
 				{
 					uint16_t removedBlocks = managePeers(shape);
 					score += removedBlocks;
-					if (removedBlocks)
+					/*if (removedBlocks)
 					{
 						printf("blockCount %d + removedBlocks:%u = newTotal %d; score: %lu\n",
 							   blockCount, removedBlocks, blockCount + removedBlocks, score);
-					}
+					}*/
 					blockCount += removedBlocks;
 					totalBlocks += removedBlocks;
 					bool levelChanged = false;
@@ -512,7 +522,7 @@ extern "C" void app_main(void)
 					if (levelChanged)
 					{
 						level++;
-						printf(">> level %d\n", level);
+						// printf(">> level %d\n", level);
 						if (level % 3 == 0)
 						{
 							blockRange = std::min(blockRange + 1, tiles.size() - 1);
@@ -522,7 +532,6 @@ extern "C" void app_main(void)
 					{
 						drawStatus();
 					}
-
 					vTaskDelay(levelChanged ? 100 : 50 / portTICK_PERIOD_MS);
 				}
 				shape.newShape(random() % cols, orgY, blockRange);

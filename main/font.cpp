@@ -1,9 +1,11 @@
 #include "font.h"
 #include <cstring>
 #include <cstdio>
+#include <cassert>
 
 CFont::CFont(uint8_t bitShift)
 {
+    assert(bitShift == shift8bytes || bitShift == shift64bytes);
     m_font = nullptr;
     m_bitShift = bitShift;
 }
