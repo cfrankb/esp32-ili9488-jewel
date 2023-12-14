@@ -162,21 +162,21 @@ menu "Joystick Configuration"
 
 	config X_AXIS
 		int "X-Axis ADC channel"
-		range 0 7
+		range -1 7
 		default 7 if IDF_TARGET_ESP32
-		default 0 if IDF_TARGET_ESP32S2
+		default -1 if IDF_TARGET_ESP32S2
 		default 0 if IDF_TARGET_ESP32S3
-		default 0 if IDF_TARGET_ESP32C3
+		default -1 if IDF_TARGET_ESP32C3
 		help
 			Joystick ADC channel for the X Axis
 
 	config Y_AXIS
 		int "Y-Axis ADC channel"
-		range 0 7
+		range -1 7
 		default 6 if IDF_TARGET_ESP32
-		default 1 if IDF_TARGET_ESP32S2
+		default -1 if IDF_TARGET_ESP32S2
 		default 1 if IDF_TARGET_ESP32S3
-		default 1 if IDF_TARGET_ESP32C3
+		default -1 if IDF_TARGET_ESP32C3
 		help
 			Joystick ADC channel for the Y Axis
 

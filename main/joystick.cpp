@@ -7,6 +7,11 @@
 #include "esp_adc/adc_oneshot.h"
 #include "esp_adc/adc_continuous.h"
 
+// #define DEBUG_JOYSTICK
+
+const adc_channel_t ADC_CHANX = static_cast<adc_channel_t>(CONFIG_X_AXIS);
+const adc_channel_t ADC_CHANY = static_cast<adc_channel_t>(CONFIG_Y_AXIS);
+static adc_oneshot_unit_handle_t adc1_handle;
 static const char *TAG = "joystick";
 
 const gpio_num_t buttonsGPIO[] = {
@@ -47,12 +52,6 @@ uint8_t readButtons()
     return result;
 }
 
-// #define DEBUG_JOYSTICK
-
-const adc_channel_t ADC_CHANX = static_cast<adc_channel_t>(CONFIG_X_AXIS);
-const adc_channel_t ADC_CHANY = static_cast<adc_channel_t>(CONFIG_Y_AXIS);
-static adc_oneshot_unit_handle_t adc1_handle;
-
 bool initJoystick()
 {
     ESP_LOGI(TAG, "initJoystick(): started");
@@ -77,8 +76,17 @@ bool initJoystick()
     };
     ESP_ERROR_CHECK(adc_oneshot_new_unit(&init_config1, &adc1_handle));
 
-    ESP_ERROR_CHECK(adc_oneshot_config_channel(adc1_handle, ADC_CHANX, &config));
-    ESP_ERROR_CHECK(adc_oneshot_config_channel(adc1_handle, ADC_CHANY, &config));
+    ESP_LOGI(TAG, "[I] ADC_CHANX = %d", ADC_CHANX);
+    ESP_LOGI(TAG, "[I] ADC_CHANY = %d", ADC_CHANY);
+
+    if (ADC_CHANX != -1)
+    {
+        ESP_ERROR_CHECK(adc_oneshot_config_channel(adc1_handle, ADC_CHANX, &config));
+    }
+    if (ADC_CHANY != -1)
+    {
+        ESP_ERROR_CHECK(adc_oneshot_config_channel(adc1_handle, ADC_CHANY, &config));
+    }
 
 #ifdef DEBUG_JOYSTICK
     const adc_channel_t channels[] = {
@@ -105,35 +113,13 @@ bool initJoystick()
     return true;
 }
 
-uint16_t readJoystick()
+uint8_t readJoystick()
 {
-    int adc_vrx = 0;
-    int adc_vry = 0;
-
-    ESP_ERROR_CHECK(adc_oneshot_read(adc1_handle, ADC_CHANX, &adc_vrx));
-    ESP_ERROR_CHECK(adc_oneshot_read(adc1_handle, ADC_CHANY, &adc_vry));
-
-    if (adc_vry == -1)
-        return false;
-    if (adc_vrx == -1)
-        return false;
-
-    uint16_t joy = JOY_NONE;
-
 #ifdef CONFIG_REVERSE_Y_AXIS_TRUE
     int flipY = JOY_UP | JOY_DOWN;
 #else
     int flipY = 0;
 #endif
-
-    if (adc_vry < 50)
-    {
-        joy |= (JOY_DOWN ^ flipY);
-    }
-    else if (adc_vry > 3000)
-    {
-        joy |= (JOY_UP ^ flipY);
-    }
 
 #ifdef CONFIG_REVERSE_X_AXIS_TRUE
     int flipX = JOY_LEFT | JOY_RIGHT;
@@ -141,14 +127,37 @@ uint16_t readJoystick()
     int flipX = 0;
 #endif
 
-    if (adc_vrx < 50)
+    int adc_vrx = 0;
+    int adc_vry = 0;
+    uint16_t joy = JOY_NONE;
+
+    if (ADC_CHANX != -1)
     {
-        joy |= (JOY_LEFT ^ flipX);
+        ESP_ERROR_CHECK(adc_oneshot_read(adc1_handle, ADC_CHANX, &adc_vrx));
+        if (adc_vrx < 50)
+        {
+            joy |= (JOY_LEFT ^ flipX);
+        }
+        else if (adc_vrx > 3000)
+        {
+            joy |= (JOY_RIGHT ^ flipX);
+        }
     }
-    else if (adc_vrx > 3000)
+    if (ADC_CHANY != -1)
     {
-        joy |= (JOY_RIGHT ^ flipX);
+        ESP_ERROR_CHECK(adc_oneshot_read(adc1_handle, ADC_CHANY, &adc_vry));
+        if (adc_vry < 50)
+        {
+            joy |= (JOY_DOWN ^ flipY);
+        }
+        else if (adc_vry > 3000)
+        {
+            joy |= (JOY_UP ^ flipY);
+        }
     }
+
+    if (adc_vry == -1 || adc_vrx == -1)
+        return 0;
 
 #ifdef DEBUG_JOYSTICK
     ESP_LOGI(TAG, "ADC%d Channel[%d] Raw Data: %d", ADC_UNIT_1 + 1, ADC_CHANX, adc_vrx);

@@ -374,6 +374,7 @@ extern "C" void app_main(void)
 	disp_spi_init();
 	ili9488_init();
 	initButtons();
+	initJoystick();
 	initSpiffs();
 	loadTiles();
 	loadFont();
@@ -395,7 +396,7 @@ extern "C" void app_main(void)
 
 		if ((cycles & 15) == 0)
 		{
-			uint8_t buttons = readButtons();
+			uint8_t buttons = readButtons() | readJoystick();
 			if (buttons & MASK_A)
 			{
 				shape.shift();

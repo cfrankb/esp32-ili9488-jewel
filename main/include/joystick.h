@@ -17,16 +17,14 @@ uint8_t readButtons();
 
 enum JoyDir
 {
-    JOY_UP = 0x01,
-    JOY_DOWN = 0x02,
-    JOY_LEFT = 0x04,
-    JOY_RIGHT = 0x08,
-    JOY_BUTTON = 0x10,
-    JOY_A_BUTTON = 0x20,
+    JOY_UP = 0x01,    // A
+    JOY_DOWN = 0x08,  // D
+    JOY_LEFT = 0x02,  // B
+    JOY_RIGHT = 0x04, // C
     JOY_NONE = 0
 };
 
 bool initJoystick();
-uint16_t readJoystick();
+uint8_t readJoystick();
 
 #endif
