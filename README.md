@@ -6,14 +6,14 @@ Current status is alpha. 90% of the core mechanic has been implemented.
 
 ## ESP-32 IL9488/SPI
 
-![Image](images/20221224_070828.jpg 'icon')
+![Image](images/20221224_070828.jpg "icon")
 
 I am also releasing the source code for the mcxz compiler:
 https://github.com/cfrankb/cs3-map-edit/tree/master/tools/mcxz
 
 # Software required
 
-esp-idf v4.4 or later.
+esp-idf v5.1.2 or later.
 
 # Installation
 

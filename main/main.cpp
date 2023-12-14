@@ -168,7 +168,7 @@ void loadTiles()
 
 void clear(color18_t color)
 {
-	ili9488_fill(0, 0, 320, 480, color);
+	ili9488_fill(0, 0, CONFIG_WIDTH, CONFIG_HEIGHT, color);
 }
 
 void test()
@@ -439,7 +439,7 @@ extern "C" void app_main(void)
 
 	esp_register_freertos_tick_hook(lv_tick_task);
 
-	CShape shape(random() % cols, orgY);
+	CShape shape(std::rand() % cols, orgY);
 	drawShape(shape);
 	drawStatus();
 
@@ -534,7 +534,7 @@ extern "C" void app_main(void)
 					}
 					vTaskDelay(levelChanged ? 100 : 50 / portTICK_PERIOD_MS);
 				}
-				shape.newShape(random() % cols, orgY, blockRange);
+				shape.newShape(std::rand() % cols, orgY, blockRange);
 			}
 			drawShape(shape);
 		}

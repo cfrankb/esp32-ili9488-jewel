@@ -20,7 +20,7 @@
  *      DEFINES
  *********************/
 
-#define LV_HOR_RES 320
+#define LV_HOR_RES CONFIG_WIDTH
 /**********************
  *      TYPEDEFS
  **********************/

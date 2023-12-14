@@ -23,7 +23,7 @@ void CGrid::random(uint8_t maxvals)
 {
     for (int i = 0; i < m_cols * m_rows; ++i)
     {
-        m_grid[i] = ::random() % maxvals;
+        m_grid[i] = std::rand() % maxvals;
     }
 }
 
