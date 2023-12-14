@@ -24,16 +24,23 @@
  **********************/
 
 /**********************
- *  STATIC PROTOTYPES
- **********************/
-static void IRAM_ATTR spi_ready(spi_transaction_t *trans);
-
-/**********************
  *  STATIC VARIABLES
  **********************/
 static spi_device_handle_t spi;
 static volatile bool spi_trans_in_progress;
 static volatile bool spi_color_sent;
+
+/**********************
+ *   STATIC FUNCTIONS
+ **********************/
+
+static void IRAM_ATTR spi_ready(spi_transaction_t *trans)
+{
+    spi_trans_in_progress = false;
+
+    // if (spi_color_sent)
+    //   lv_flush_ready();
+}
 
 /**********************
  *      MACROS
@@ -54,13 +61,32 @@ void disp_spi_init(void)
         .sclk_io_num = DISP_SPI_CLK,
         .quadwp_io_num = -1,
         .quadhd_io_num = -1,
+        .data4_io_num = 0,
+        .data5_io_num = 0,
+        .data6_io_num = 0,
+        .data7_io_num = 0,
         .max_transfer_sz = 0,
+        .flags = 0,
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 3, 0)
+        .isr_cpu_id = ESP_INTR_CPU_AFFINITY_AUTO,
+#else
+        .isr_cpu_id = static_cast<intr_cpu_id_t>(0),
+#endif
+        .intr_flags = 0,
     };
 
     spi_device_interface_config_t devcfg = {
-        .mode = 0,                             // SPI mode 0
+        .command_bits = 0,
+        .address_bits = 0,
+        .dummy_bits = 0,
+        .mode = 0, // SPI mode 0
+        .clock_source = SPI_CLK_SRC_DEFAULT,
+        .duty_cycle_pos = 0,
+        .cs_ena_pretrans = 0,
+        .cs_ena_posttrans = 0,
         .clock_speed_hz = SPI_MASTER_FREQ_40M, // Clock out at 40 MHz
-        .spics_io_num = DISP_SPI_CS,           // CS pin
+        .input_delay_ns = 0,
+        .spics_io_num = DISP_SPI_CS, // CS pin
         .flags = SPI_DEVICE_NO_DUMMY,
         .queue_size = 7,
         .pre_cb = NULL,
@@ -109,16 +135,4 @@ void disp_spi_send_colors(uint8_t *data, uint16_t length)
     spi_color_sent = true; // Mark the "lv_flush_ready" needs to be called in "spi_ready"
     spi_device_queue_trans(spi, &t, portMAX_DELAY);
     // spi_device_transmit(spi, &t);
-}
-
-/**********************
- *   STATIC FUNCTIONS
- **********************/
-
-static void IRAM_ATTR spi_ready(spi_transaction_t *trans)
-{
-    spi_trans_in_progress = false;
-
-    // if (spi_color_sent)
-    //   lv_flush_ready();
 }

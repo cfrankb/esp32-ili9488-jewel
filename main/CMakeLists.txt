@@ -11,4 +11,5 @@ set(SOURCES
 idf_component_register(
     SRCS ${SOURCES}
     INCLUDE_DIRS "."
+    INCLUDE_DIRS "./include"
 )
