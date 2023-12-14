@@ -9,50 +9,42 @@
 
 static const char *TAG = "joystick";
 
+const gpio_num_t buttonsGPIO[] = {
+    JOYSTICK_A_BUTTON,
+    JOYSTICK_B_BUTTON,
+    JOYSTICK_C_BUTTON,
+    JOYSTICK_D_BUTTON};
+
+const int buttonCount = 4;
+
 void initButtons()
 {
-    esp_err_t ret;
-    ret = gpio_set_direction(JOYSTICK_A_BUTTON, GPIO_MODE_INPUT);
-    if (ret != ESP_OK)
+    for (int i = 0; i < buttonCount; ++i)
     {
-        ESP_LOGE(TAG, "[A] gpio_set_direction Failed (%s)", esp_err_to_name(ret));
+        const gpio_num_t &buttonGPIO = buttonsGPIO[i];
+        ESP_LOGI(TAG, "[I] BUTTON_%c GPIO = %d", 'A' + i, buttonGPIO);
+        if (buttonGPIO != -1)
+        {
+            ESP_ERROR_CHECK(gpio_set_direction(buttonGPIO, GPIO_MODE_INPUT));
+            ESP_ERROR_CHECK(gpio_set_pull_mode(buttonGPIO, GPIO_PULLUP_PULLDOWN));
+        }
     }
-
-    ret = gpio_set_direction(JOYSTICK_B_BUTTON, GPIO_MODE_INPUT);
-    if (ret != ESP_OK)
-    {
-        ESP_LOGE(TAG, "[B] gpio_set_direction Failed (%s)", esp_err_to_name(ret));
-    }
-
-    ret = gpio_set_direction(JOYSTICK_C_BUTTON, GPIO_MODE_INPUT);
-    if (ret != ESP_OK)
-    {
-        ESP_LOGE(TAG, "[C] gpio_set_direction Failed (%s)", esp_err_to_name(ret));
-    }
-
-    ret = gpio_set_direction(JOYSTICK_D_BUTTON, GPIO_MODE_INPUT);
-    if (ret != ESP_OK)
-    {
-        ESP_LOGE(TAG, "[C] gpio_set_direction Failed (%s)", esp_err_to_name(ret));
-    }
-
-    gpio_set_pull_mode(JOYSTICK_A_BUTTON, GPIO_PULLUP_PULLDOWN);
-    gpio_set_pull_mode(JOYSTICK_B_BUTTON, GPIO_PULLUP_PULLDOWN);
-    gpio_set_pull_mode(JOYSTICK_C_BUTTON, GPIO_PULLUP_PULLDOWN);
-    gpio_set_pull_mode(JOYSTICK_D_BUTTON, GPIO_PULLUP_PULLDOWN);
 }
 
 uint8_t readButtons()
 {
-    int a_button = gpio_get_level(JOYSTICK_A_BUTTON);
-    int b_button = gpio_get_level(JOYSTICK_B_BUTTON);
-    int c_button = gpio_get_level(JOYSTICK_C_BUTTON);
-    int d_button = gpio_get_level(JOYSTICK_D_BUTTON);
-    // printf("Buttons: %.2x %.2x %.2x %.2x\n", a_button, b_button, c_button, d_button);
-    return a_button |
-           (b_button << 1) |
-           (c_button << 2) |
-           (d_button << 3);
+    uint8_t result = 0;
+    uint8_t mask = 1;
+    for (int i = 0; i < buttonCount; ++i)
+    {
+        const gpio_num_t &buttonGPIO = buttonsGPIO[i];
+        if (buttonGPIO != -1)
+        {
+            result += gpio_get_level(buttonGPIO) * mask;
+        }
+        mask += mask;
+    }
+    return result;
 }
 
 // #define DEBUG_JOYSTICK

@@ -1,11 +1,5 @@
-/**
- * @file ili9488.cpp
- *
- */
-
-/*********************
- *      INCLUDES
- *********************/
+#include <cstring>
+#include <algorithm>
 #include "ili9488.h"
 #include "disp_spi.h"
 #include "driver/gpio.h"
@@ -14,17 +8,7 @@
 #include "tileset.h"
 #include "esp_log.h"
 
-#include <cstring>
-#include <algorithm>
-
-/*********************
- *      DEFINES
- *********************/
-
 #define LV_HOR_RES CONFIG_WIDTH
-/**********************
- *      TYPEDEFS
- **********************/
 
 /*The LCD needs a bunch of command/argument values to be initialized. They are stored in this struct. */
 typedef struct
@@ -34,26 +18,11 @@ typedef struct
 	uint8_t databytes; // No of data in data; bit 7 = delay after set; 0xFF = end of cmds.
 } lcd_init_cmd_t;
 
-/**********************
- *  STATIC PROTOTYPES
- **********************/
 static void ili9488_send_cmd(uint8_t cmd);
 static void ili9488_send_data(void *data, uint16_t length);
 static void ili9488_send_color(void *data, uint16_t length);
 
-/**********************
- *  STATIC VARIABLES
- **********************/
-
 static const char *TAG = "ili9488";
-
-/**********************
- *      MACROS
- **********************/
-
-/**********************
- *   GLOBAL FUNCTIONS
- **********************/
 
 const uint16_t dmaMax = 2048;
 
@@ -341,10 +310,6 @@ void ili9488_drawFont(
 	initWriteWindow(rect);
 	commitWrite(buf, bytesLeft);
 }
-
-/**********************
- *   STATIC FUNCTIONS
- **********************/
 
 static void ili9488_send_cmd(uint8_t cmd)
 {

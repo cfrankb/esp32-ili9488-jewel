@@ -2,10 +2,10 @@
 #define JOYSTICK_H___
 #include <cstdint>
 
-#define JOYSTICK_A_BUTTON GPIO_NUM_16 // orange
-#define JOYSTICK_B_BUTTON GPIO_NUM_17 // blue
-#define JOYSTICK_C_BUTTON GPIO_NUM_21 // yellow
-#define JOYSTICK_D_BUTTON GPIO_NUM_19 // gray
+#define JOYSTICK_A_BUTTON static_cast<gpio_num_t>(CONFIG_BUTTON_A_GPIO) // GPIO_NUM_16 // orange
+#define JOYSTICK_B_BUTTON static_cast<gpio_num_t>(CONFIG_BUTTON_B_GPIO) // GPIO_NUM_17 // blue
+#define JOYSTICK_C_BUTTON static_cast<gpio_num_t>(CONFIG_BUTTON_C_GPIO) // GPIO_NUM_21 // yellow
+#define JOYSTICK_D_BUTTON static_cast<gpio_num_t>(CONFIG_BUTTON_D_GPIO) // GPIO_NUM_19 // gray
 
 #define MASK_A 1
 #define MASK_B 2

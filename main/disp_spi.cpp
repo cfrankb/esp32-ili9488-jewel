@@ -1,11 +1,3 @@
-/**
- * @file disp_spi.c
- *
- */
-
-/*********************
- *      INCLUDES
- *********************/
 #include "disp_spi.h"
 #include "esp_system.h"
 #include "driver/gpio.h"
@@ -15,10 +7,7 @@
 #include <freertos/semphr.h>
 #include "freertos/task.h"
 #include "esp_log.h"
-
-/*********************
- *      DEFINES
- *********************/
+#include "esp_err.h"
 
 #if CONFIG_SPI2_HOST
 #define HOST_ID SPI2_HOST // HSPI_HOST
@@ -26,21 +15,10 @@
 #define HOST_ID SPI3_HOST // VSPI_HOST
 #endif
 
-/**********************
- *      TYPEDEFS
- **********************/
-
-/**********************
- *  STATIC VARIABLES
- **********************/
 static spi_device_handle_t spi;
 static volatile bool spi_trans_in_progress;
 static volatile bool spi_color_sent;
 static const char *TAG = "disp_spi";
-
-/**********************
- *   STATIC FUNCTIONS
- **********************/
 
 static void IRAM_ATTR spi_ready(spi_transaction_t *trans)
 {
@@ -50,13 +28,6 @@ static void IRAM_ATTR spi_ready(spi_transaction_t *trans)
     //   lv_flush_ready();
 }
 
-/**********************
- *      MACROS
- **********************/
-
-/**********************
- *   GLOBAL FUNCTIONS
- **********************/
 void disp_spi_init(void)
 {
     // https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/peripherals/spi_master.html
