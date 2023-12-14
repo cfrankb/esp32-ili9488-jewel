@@ -64,9 +64,9 @@ https://www.aliexpress.com/item/32345829014.html
 
 ## Buttons
 
-![Image](images/20231214_150158-crop.jpg "icon")
+![Image](images/20231214_150158-crop-50.jpg "icon")
 
-| JOYSTICK | wirecolor | GPIO Pin |
+| Button   | wirecolor | GPIO Pin |
 | -------- | --------- | -------- |
 | Button A | orange    | 16       |
 | Button B | blue      | 17       |
