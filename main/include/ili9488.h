@@ -8,8 +8,8 @@
 
 #include <stdint.h>
 
-#define ILI9488_DC static_cast<gpio_num_t>(CONFIG_DC_GPIO)     //   GPIO_NUM_27   // 19
-#define ILI9488_RST static_cast<gpio_num_t>(CONFIG_RESET_GPIO) //  GPIO_NUM_33  // 18
+#define ILI9488_DC static_cast<gpio_num_t>(CONFIG_DC_GPIO)     // GPIO_NUM_27 // 19
+#define ILI9488_RST static_cast<gpio_num_t>(CONFIG_RESET_GPIO) // GPIO_NUM_33 // 18
 #define ILI9488_BCKL static_cast<gpio_num_t>(CONFIG_BL_GPIO)   // GPIO_NUM_32 // 23
 
 typedef struct

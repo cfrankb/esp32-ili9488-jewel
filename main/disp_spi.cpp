@@ -14,10 +14,17 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/semphr.h>
 #include "freertos/task.h"
+#include "esp_log.h"
 
 /*********************
  *      DEFINES
  *********************/
+
+#if CONFIG_SPI2_HOST
+#define HOST_ID SPI2_HOST // HSPI_HOST
+#elif CONFIG_SPI3_HOST
+#define HOST_ID SPI3_HOST // VSPI_HOST
+#endif
 
 /**********************
  *      TYPEDEFS
@@ -29,6 +36,7 @@
 static spi_device_handle_t spi;
 static volatile bool spi_trans_in_progress;
 static volatile bool spi_color_sent;
+static const char *TAG = "disp_spi";
 
 /**********************
  *   STATIC FUNCTIONS
@@ -54,6 +62,10 @@ void disp_spi_init(void)
     // https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/peripherals/spi_master.html
 
     esp_err_t ret;
+
+    ESP_LOGI(TAG, "[I] ILI9488 MOSI GPIO = %d", DISP_SPI_MOSI);
+    ESP_LOGI(TAG, "[I] ILI9488 CLK GPIO = %d", DISP_SPI_CLK);
+    ESP_LOGI(TAG, "[I] ILI9488 CS GPIO = %d", DISP_SPI_CS);
 
     spi_bus_config_t buscfg = {
         .mosi_io_num = DISP_SPI_MOSI,
@@ -94,11 +106,11 @@ void disp_spi_init(void)
     };
 
     // Initialize the SPI bus
-    ret = spi_bus_initialize(HSPI_HOST, &buscfg, SPI_DMA_CH_AUTO);
+    ret = spi_bus_initialize(HOST_ID, &buscfg, SPI_DMA_CH_AUTO);
     assert(ret == ESP_OK);
 
     // Attach the LCD to the SPI bus
-    ret = spi_bus_add_device(HSPI_HOST, &devcfg, &spi);
+    ret = spi_bus_add_device(HOST_ID, &devcfg, &spi);
     assert(ret == ESP_OK);
 }
 

@@ -12,6 +12,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "tileset.h"
+#include "esp_log.h"
 
 #include <cstring>
 #include <algorithm>
@@ -43,6 +44,8 @@ static void ili9488_send_color(void *data, uint16_t length);
 /**********************
  *  STATIC VARIABLES
  **********************/
+
+static const char *TAG = "ili9488";
 
 /**********************
  *      MACROS
@@ -157,17 +160,29 @@ void ili9488_init(void)
 	};
 
 	// Initialize non-SPI GPIOs
-	gpio_set_direction(ILI9488_DC, GPIO_MODE_OUTPUT);
-	gpio_set_direction(ILI9488_RST, GPIO_MODE_OUTPUT);
-	gpio_set_direction(ILI9488_BCKL, GPIO_MODE_OUTPUT);
+	ESP_LOGI(TAG, "[I] ILI9488 DC GPIO = %d", ILI9488_DC);
+	if (ILI9488_DC != -1)
+	{
+		gpio_set_direction(ILI9488_DC, GPIO_MODE_OUTPUT);
+	}
+
+	ESP_LOGI(TAG, "[I] ILI9488 RST GPIO = %d", ILI9488_RST);
+	if (ILI9488_RST != -1)
+	{
+		gpio_set_direction(ILI9488_RST, GPIO_MODE_OUTPUT);
+	}
+
+	ESP_LOGI(TAG, "[I] ILI9488 BCKL GPIO = %d", ILI9488_BCKL);
+	if (ILI9488_BCKL != -1)
+	{
+		gpio_set_direction(ILI9488_BCKL, GPIO_MODE_OUTPUT);
+	}
 
 	// Reset the display
 	gpio_set_level(ILI9488_RST, 0);
 	vTaskDelay(100 / portTICK_PERIOD_MS); // portTICK_RATE_MS);
 	gpio_set_level(ILI9488_RST, 1);
 	vTaskDelay(100 / portTICK_PERIOD_MS); // portTICK_RATE_MS);
-
-	printf("ILI9488 initialization.\n");
 
 	// Send all the commands
 	uint16_t cmd = 0;
@@ -183,8 +198,11 @@ void ili9488_init(void)
 	}
 
 	/// Enable backlight
-	printf("Enable backlight.\n");
-	gpio_set_level(ILI9488_BCKL, 1);
+	if (ILI9488_BCKL != -1)
+	{
+		ESP_LOGI(TAG, "[I] Enable backlight");
+		gpio_set_level(ILI9488_BCKL, 1);
+	}
 }
 
 void initWriteWindow(const rect_t &rect)

@@ -7,6 +7,7 @@ set(SOURCES
     "grid.cpp"
     "shape.cpp"
     "font.cpp"
+    "joystick.cpp"
 )
 idf_component_register(
     SRCS ${SOURCES}
