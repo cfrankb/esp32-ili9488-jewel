@@ -35,6 +35,9 @@ idf.py flash
 
 ## ILI9488
 
+These are settings example which apply to the ESP32.
+GPIO pins for other models may vary. Use -1 to disable a feature.
+
 | ILI9488  | wirecolor | GPIO Pin |
 | -------- | --------- | -------- |
 | SDK/MISO | purple    | -        |
@@ -58,3 +61,14 @@ https://www.aliexpress.com/item/32345829014.html
 | SW       | blue      | 26       |
 | GRN      | black     | GRN      |
 | VCC      | red       | 3.3v     |
+
+## Buttons
+
+![Image](images/20231214_150158-crop.jpg "icon")
+
+| JOYSTICK | wirecolor | GPIO Pin |
+| -------- | --------- | -------- |
+| Button A | orange    | 16       |
+| Button B | blue      | 17       |
+| Button C | yellow    | 21       |
+| Button D | gray      | 19       |
