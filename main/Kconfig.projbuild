@@ -169,6 +169,7 @@ menu "Joystick Configuration"
 		default -1 if IDF_TARGET_ESP32C3
 		help
 			Joystick ADC channel for the X Axis
+			Set to -1 if not used
 
 	config Y_AXIS
 		int "Y-Axis ADC channel"
@@ -179,6 +180,7 @@ menu "Joystick Configuration"
 		default -1 if IDF_TARGET_ESP32C3
 		help
 			Joystick ADC channel for the Y Axis
+			Set to -1 if not used
 
 	choice REVERSE_X_AXIS
 		prompt "Reverse X-Axis"
@@ -219,6 +221,7 @@ menu "Joystick Configuration"
 		default -1  if IDF_TARGET_ESP32C3
 		help
 			GPIO number for digital input Button A
+			Set to -1 if not used
 
 	config BUTTON_B_GPIO
 		int "Button B GPIO number"
@@ -229,6 +232,7 @@ menu "Joystick Configuration"
 		default -1  if IDF_TARGET_ESP32C3
 		help
 			GPIO number for digital input Button B
+			Set to -1 if not used
 
 	config BUTTON_C_GPIO
 		int "Button C GPIO number"
@@ -239,6 +243,7 @@ menu "Joystick Configuration"
 		default -1  if IDF_TARGET_ESP32C3
 		help
 			GPIO number for digital input Button C
+			Set to -1 if not used
 
 	config BUTTON_D_GPIO
 		int "Button D GPIO number"
@@ -249,5 +254,6 @@ menu "Joystick Configuration"
 		default -1  if IDF_TARGET_ESP32C3
 		help
 			GPIO number for digital input Button D
+			Set to -1 if not used
 
 endmenu
